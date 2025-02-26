@@ -368,13 +368,13 @@ aioschedule.every(1).seconds.do(update_db)
 #             await bot.edit_message_text(
 #                 text,
 #                 chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup)
-#
-#
-# async def scheduler():
-#     while True:
-#         await aioschedule.run_pending()
-#         await asyncio.sleep(1)
-#
+
+
+async def scheduler():
+    while True:
+        await aioschedule.run_pending()
+        await asyncio.sleep(1)
+
 
 async def main():
     global apex, cs, dota2, apex_tournaments, cs_tournaments, dota_tournaments

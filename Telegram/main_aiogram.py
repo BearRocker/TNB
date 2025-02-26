@@ -374,7 +374,7 @@ aioschedule.every(1).seconds.do(update_db)
 #     while True:
 #         await aioschedule.run_pending()
 #         await asyncio.sleep(1)
-
+#
 
 async def main():
     global apex, cs, dota2, apex_tournaments, cs_tournaments, dota_tournaments

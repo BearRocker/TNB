@@ -4,7 +4,11 @@ import pytz
 from datetime import timedelta
 import pandas as pd
 import asyncio
+
+from DataBases.delete_methods import delete_tournament
+from DataBases.select_methods import select_tournaments, select_games
 from Disciplines.BaseDiscipline import Base
+from DataBases.add_methods import add_tournament, add_games
 
 
 def tz_diff(date, tz1, tz2):
@@ -14,8 +18,8 @@ def tz_diff(date, tz1, tz2):
 
 
 class DOTA2(Base):
-    def __init__(self, appname, game, discipline_id):
-        super().__init__(appname, game, discipline_id)
+    def __init__(self, appname, game, discipline_id, game_name):
+        super().__init__(appname, game, discipline_id, game_name)
 
     async def get_matches(self):
         games = []
@@ -68,6 +72,55 @@ class DOTA2(Base):
                             games.append(game)
                             await asyncio.sleep(30)
         return games
+
+    async def get_tournament(self):
+        games = await select_games(self.game_name)
+        if len(games) == 0:
+            await add_games({"GameID": self.discipline_id, "Name": self.game_name})
+        tournaments = []
+        tournaments_names = []
+        soup, __ = self.liquipedia.parse('Portal:Tournaments')
+        tables = soup.find_all('div', class_="gridTable")
+        tournaments_db = await select_tournaments()
+        tournaments_db = [[i.Name, i.GameID] for i in tournaments_db]
+        tournaments_db_names = []
+        for i in tournaments_db:
+            tournaments_db_names.append(i[0])
+        for table in tables:
+            rows = table.find_all('div', class_="gridRow")
+            for row in rows:
+                tournament = {}
+                tournament_name = row.find("div", class_="gridCell Tournament Header")
+                tournament_tier = row.find("div", class_="gridCell Tier Header")
+                tournament_date = row.find("div", class_="gridCell EventDetails Date Header")
+                tournament_prize = row.find("div", class_="gridCell EventDetails Prize Header")
+                tournament_teamscount = row.find('div', class_="gridCell EventDetails PlayerNumber Header")
+                tournament["tier"] = tournament_tier.get_text()
+                tournament["tournament"] = tournament_name.get_text().replace('\xa0', '')
+                tournaments_names.append(tournament['tournament'])
+                if self.is_today_before_date_range(tournament_date.get_text()):
+                    tournament["date"] = tournament_date.get_text()
+                else:
+                    continue
+                if tournament_prize:
+                    tournament["prize"] = tournament_prize.get_text()
+                else:
+                    tournament["prize"] = 0
+                teams_on_tournament = tournament_teamscount.get_text()[0:3]
+                teams_on_tournament = teams_on_tournament.replace(u"\xa0", u"")
+                if len(teams_on_tournament) >= 2:
+                    tournament["teams_count"] = teams_on_tournament
+                else:
+                    tournament["teams_count"] = "idk"
+                print(tournament['tournament'])
+                if tournament['tournament'] not in tournaments_db_names:
+                    await add_tournament({"Prize": str(tournament['prize']), "TeamsCount": tournament["teams_count"],
+                                          "Tier": tournament["tier"], "GameID": 1, "Name": tournament['tournament']})
+                tournaments.append(tournament)
+        for tournament_db in tournaments_db:
+            if tournament_db[0] not in tournaments_names and tournament_db[1] == self.discipline_id:
+                await delete_tournament(tournament_db[0])
+        return tournaments
 
 
 

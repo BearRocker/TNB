@@ -16,11 +16,12 @@ import asyncio
 
 
 class Base:
-    def __init__(self, appname, game, discipline_id):
+    def __init__(self, appname, game, discipline_id, game_name):
         self.appname = appname
         self.discipline_id = discipline_id
         self.liquipedia = LPRequest(appname, game=game)
         self.timezones = collections.defaultdict(list)
+        self.game_name = game_name
         for name in pytz.all_timezones:
             timezone = dtz.gettz(name)
             try:
@@ -61,9 +62,9 @@ class Base:
                 return True
 
     async def get_tournament(self):
-        games = await select_games('Apex Legends')
+        games = await select_games(self.game_name)
         if len(games) == 0:
-            await add_games({"GameID": 1, "Name": "Apex Legends"})
+            await add_games({"GameID": self.discipline_id, "Name": self.game_name})
         tournaments = []
         tournaments_names = []
         soup, __ = self.liquipedia.parse('Portal:Tournaments')

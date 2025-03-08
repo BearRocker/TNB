@@ -10,7 +10,8 @@ from Disciplines.CS2 import CS
 from Disciplines.Dota2 import DOTA2
 import logging
 import asyncio
-from aiogram import Bot, Dispatcher, F, Router, MagicFilter
+import re
+from aiogram import Bot, Dispatcher, F, Router
 from aiogram.filters import CommandStart, Command
 from DataBases.select_methods import select_user_by_id, select_user_tournaments, select_tournament_by_name, select_users
 from DataBases import database_update
@@ -19,7 +20,7 @@ import aioschedule
 from dateutil import parser
 from datetime import timedelta
 import Config
-from keyboard import *
+from keyboard_methods import start_sub_check, start_menu,search_for_tier,subscriptions, for_tournaments, choose_discipline, delete_notification
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -29,12 +30,13 @@ dispatcher = Dispatcher()
 
 
 # First initialization with startup
-apex = Apex(appname="TNB", game="apexlegends", discipline_id=1)
-cs = CS(appname="TNB", game="counterstrike", discipline_id=2)
-dota2 = DOTA2(appname="TNB", game="dota2", discipline_id=3)
+apex = Apex(appname="TNB", game="apexlegends", discipline_id=1, game_name="Apex Legends")
+cs = CS(appname="TNB", game="counterstrike", discipline_id=2, game_name="CS2")
+dota2 = DOTA2(appname="TNB", game="dota2", discipline_id=3, game_name="Dota2")
 apex_tournaments = []
 cs_tournaments = []
 dota_tournaments = []
+disciplines = {'Apex Legends': apex_tournaments, 'Counter Strike': cs_tournaments, 'Dota 2': dota_tournaments}
 
 
 async def check(message): # Проверка времени до начала матча и на проверку прошедших турниров в подписках
@@ -71,20 +73,22 @@ async def check(message): # Проверка времени до начала м
 
 async def update_db():  # Обновление ДБ каждый день в 6 утра по Пермскому
     # Updating DB every day at 6:00 +2 MSK
-    global apex_tournaments, cs_tournaments, dota_tournaments
+    global apex_tournaments, cs_tournaments, dota_tournaments, disciplines
     if datetime.now().hour == 6 and datetime.now().minute == 0 and datetime.now().second == 0:
         # await bot.send_message(chat_id=Config.bot_channel_id, text='Бот ушёл на обновление баз данных будет доступен через 10 минут') уже не нужно, оставил на всякий
         apex_tournaments = await apex.get_tournament()
         cs_tournaments = await cs.get_tournament()
         dota_tournaments = await dota2.get_tournament()
+        disciplines = {'Apex Legends': apex_tournaments, 'Counter Strike': cs_tournaments, 'Dota 2': dota_tournaments}
         await database_update.update_db()
 
 
 async def update_db_command():
-    global apex_tournaments, cs_tournaments, dota_tournaments
+    global apex_tournaments, cs_tournaments, dota_tournaments, disciplines
     apex_tournaments = await apex.get_tournament()
     cs_tournaments = await cs.get_tournament()
     dota_tournaments = await dota2.get_tournament()
+    disciplines = {'Apex Legends': apex_tournaments, 'Counter Strike': cs_tournaments, 'Dota 2': dota_tournaments}
     await database_update.update_db()
 
 # Starting up every minute check
@@ -149,8 +153,8 @@ async def check_subs(call: CallbackQuery):
 async def Apex_tiers(call: CallbackQuery):
     tier = call.data.split('|')[1] if len(call.data.split('|'))>1 else None # Tier = S-Tier, A-Tier, B-Tier
     if tier:
-        if tier != "Back":
-            markup = await for_tournaments(apex_tournaments, tier, call.message.chat.id)
+        if "Back" not in tier:
+            markup = await for_tournaments(apex_tournaments, tier, call.message.chat.id, 'Apex')
             await bot.edit_message_text(f"Вы выбрали тир {tier} турниров по Apex Legends", chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup.as_markup())
     else:
         markup = await search_for_tier('Apex', ["S-Tier", "A-Tier", "B-Tier"])
@@ -159,25 +163,178 @@ async def Apex_tiers(call: CallbackQuery):
 
 @dispatcher.callback_query(F.data.contains('Back'))
 async def back_to(call: CallbackQuery):
-    markup = await choose_discipline()
-    await bot.edit_message_text("Выбирай дисциплину", chat_id=call.message.chat.id,
-                                message_id=call.message.message_id, reply_markup=markup)
+    discipline = call.data.split("|")[1] if len(call.data.split("|"))>1 else None
+    print(discipline)
+    if discipline == "Apex":
+        markup = await search_for_tier('Apex', ["S-Tier", "A-Tier", "B-Tier"])
+        await bot.edit_message_text("Вы выбрали дисциплину Apex Legends", chat_id=call.message.chat.id,
+                                    message_id=call.message.message_id, reply_markup=markup)
+    elif discipline == "CS2":
+        markup = await search_for_tier('CS2', ["S-Tier", "A-Tier", "B-Tier"])
+        await bot.edit_message_text("Вы выбрали дисциплину CS2", chat_id=call.message.chat.id,
+                                    message_id=call.message.message_id, reply_markup=markup)
+    elif discipline == "DOTA2":
+        markup = await search_for_tier('DOTA2', ["Tier 1", "Tier 2", "Tier 3"])
+        await bot.edit_message_text("Вы выбрали дисциплину Dota 2", chat_id=call.message.chat.id,
+                                    message_id=call.message.message_id, reply_markup=markup)
+    else:
+        markup = await choose_discipline()
+        await bot.edit_message_text("Выбирай дисциплину", chat_id=call.message.chat.id,
+                                    message_id=call.message.message_id, reply_markup=markup)
+
 
 
 @dispatcher.callback_query(F.data.startswith("CS2"))
 async def CS2_tiers(call: CallbackQuery):
-    tier = F.data.split('|')[1]  # Tier = S-Tier, A-Tier, B-Tier
-    markup = await for_tournaments(apex_tournaments, tier, call.message.chat.id)
-    await bot.edit_message_text(f"Вы выбрали тир {tier.split('-')[0]} турниров по Apex Legends",
-                                chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup)
+    tier = call.data.split('|')[1] if len(call.data.split('|')) > 1 else None  # Tier = S-Tier, A-Tier, B-Tier
+    if tier:
+        if "Back" not in tier:
+            markup = await for_tournaments(cs_tournaments, tier, call.message.chat.id, "CS2")
+            await bot.edit_message_text(f"Вы выбрали тир {tier} турниров по CS2", chat_id=call.message.chat.id,
+                                        message_id=call.message.message_id, reply_markup=markup.as_markup())
+    else:
+        markup = await search_for_tier('CS2', ["S-Tier", "A-Tier", "B-Tier"])
+        await bot.edit_message_text("Вы выбрали дисциплину CS2", chat_id=call.message.chat.id,
+                                    message_id=call.message.message_id, reply_markup=markup)
 
 
 @dispatcher.callback_query(F.data.startswith("DOTA2"))
 async def DOTA_tiers(call: CallbackQuery):
-    tier = F.data.split('|')[1]  # Tier = S-Tier, A-Tier, B-Tier
-    markup = await for_tournaments(apex_tournaments, tier, call.message.chat.id)
-    await bot.edit_message_text(f"Вы выбрали тир {tier.split('-')[0]} турниров по Apex Legends",
-                                chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup)
+    tier = call.data.split('|')[1] if len(call.data.split('|')) > 1 else None  # Tier = Tier 1, Tier 2, Tier 3
+    tier_to_normal = {"Tier 1":"S-Tier", "Tier 2":"A-Tier", "Tier 3":"B-Tier"}
+    if tier:
+        if "Back" not in tier:
+            markup = await for_tournaments(dota_tournaments, tier, call.message.chat.id, "DOTA2")
+            await bot.edit_message_text(f"Вы выбрали тир {tier_to_normal[tier]} турниров по Dota 2", chat_id=call.message.chat.id,
+                                        message_id=call.message.message_id, reply_markup=markup.as_markup())
+    else:
+        markup = await search_for_tier('DOTA2', ["Tier 1", "Tier 2", "Tier 3"])
+        await bot.edit_message_text("Вы выбрали дисциплину Dota 2", chat_id=call.message.chat.id,
+                                    message_id=call.message.message_id, reply_markup=markup)
+
+
+# markup = await for_tournaments(apex_tournaments, "S-Tier", call.message.chat.id)
+#             await bot.edit_message_text(
+#                 text,
+#                 chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup)
+
+
+@dispatcher.callback_query(F.data.startswith('t+'))
+async def add_tournament_to_db(call: CallbackQuery):
+    global disciplines
+    tournament = call.data.split("+")[-1]
+    tournament = await select_tournament_by_name(tournament)
+    tournament = tournament[0].to_dict()['Name']
+    tournament_ids = await select_tournament_by_name(tournament)
+    tournament_ids = str(tournament_ids[0].TournamentID)
+    tournaments_selected = await select_user_tournaments(call.message.chat.id)
+    if tournaments_selected[0] != '':
+        if tournament_ids not in tournaments_selected[0].split(','):
+            tournament_id = await select_tournament_by_name(tournament)
+            tournament_id = str(tournament_id[0].TournamentID)
+            await update_user_tournaments(call.message.chat.id, tournaments_selected[0] + "," + tournament_id)
+            tiers = ["\\bS\\b", "\\bA\\b", "\\bB\\b"]
+            pattern_discipline = ['\\bApex Legends\\b', '\\bCounter Strike\\b', '\\bDota 2\\b']
+            discipline_res = {"Apex Legends": "Apex", "Counter Strike": "CS2", "Dota 2": "DOTA2"}
+            message_text = call.message.text
+            founded_tier = ''
+            discipline = ''
+            for tier in tiers:
+                find_tier = re.findall(tier, call.message.text)
+                if len(find_tier) != 0:
+                    founded_tier = find_tier[0]
+            for p in pattern_discipline:
+                find_discipline = re.findall(p, message_text)
+                if len(find_discipline) != 0:
+                    discipline = find_discipline[0]
+            markup = await for_tournaments(disciplines[discipline], founded_tier+"-Tier" if founded_tier in ["S", "A", "B"] else "Tier " + founded_tier, call.message.chat.id, discipline_res[discipline])
+            await bot.edit_message_text(f"Вы подписались на уведомления о матчах на турнире {founded_tier} тира {tournament} по {discipline}", chat_id=call.message.chat.id,
+                                        message_id=call.message.message_id, reply_markup=markup.as_markup())
+        else:
+            markup = await delete_notification(tournament)
+            message_text = call.message.text
+            pattern_discipline = ['\\bApex Legends\\b', '\\bCounter Strike\\b', '\\bDota 2\\b']
+            pattern_tier = ['\\bS\\b', '\\bA\\b', '\\bB\\b']
+            for p in pattern_discipline:
+                find_discipline = re.findall(p, message_text)
+                if len(find_discipline) != 0:
+                    for pt in pattern_tier:
+                        find_tier = re.findall(pt, message_text)
+                        if len(find_tier) != 0:
+                            await bot.edit_message_text(
+                                f"Вы хотите удалить турнир {find_tier[0]} тира по {find_discipline[0]} - {tournament} из своих оповещений?",
+                                chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                reply_markup=markup)
+    else:
+        discipline_res = {"Apex Legends": "Apex", "Counter Strike": "CS2", "Dota 2": "DOTA2"}
+        tournament_id = await select_tournament_by_name(tournament)
+        tournament_id = str(tournament_id[0].TournamentID)
+        await update_user_tournaments(call.message.chat.id, tournament_id)
+        tiers = ["\\bS\\b", "\\bA\\b", "\\bB\\b"]
+        pattern_discipline = ['\\bApex Legends\\b', '\\bCounter Strike\\b', '\\bDota 2\\b']
+        message_text = call.message.text
+        founded_tier = ''
+        discipline = ''
+        for tier in tiers:
+            find_tier = re.findall(tier, call.message.text)
+            if len(find_tier) != 0:
+                founded_tier = find_tier[0]
+        for p in pattern_discipline:
+            find_discipline = re.findall(p, message_text)
+            if len(find_discipline) != 0:
+                discipline = find_discipline[0]
+        markup = await for_tournaments(disciplines[discipline], founded_tier+"-Tier" if founded_tier in ["S", "A", "B"] else "Tier " + founded_tier, call.message.chat.id, discipline_res[discipline])
+        await bot.edit_message_text(
+            f"Вы подписались на уведомления о матчах на турнире {founded_tier} тира {tournament} по {discipline}",
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id, reply_markup=markup.as_markup())
+
+
+@dispatcher.callback_query(F.data == "Mistake")
+async def mistake_remove(call: CallbackQuery):
+    tiers = ["\\bS\\b", "\\bA\\b", "\\bB\\b"]
+    global disciplines
+    disciplines_list = ["Apex Legends", "Counter Strike", "Dota 2"]
+    discipline_res = {"Apex Legends": "Apex", "Counter Strike": "CS2", "Dota 2": "DOTA2"}
+    for tier in tiers:
+        find_tier = re.findall(tier, call.message.text)
+        if len(find_tier) != 0:
+            for discipline in disciplines_list:
+                if discipline in call.message.text:
+                    markup = await for_tournaments(disciplines[discipline], find_tier[0]+"-Tier" if find_tier[0] in ["S", "A", "B"] else "Tier " + find_tier[0], call.message.chat.id,
+                                                   discipline_res[discipline])
+                    await bot.edit_message_text(
+                        f"Вы выбрали тир {find_tier[0]} турниров по Apex Legends",
+                        chat_id=call.message.chat.id,
+                        message_id=call.message.message_id, reply_markup=markup.as_markup())
+
+@dispatcher.callback_query(F.data.startswith("Delete"))
+async def delete_from_subs(call: CallbackQuery):
+    global disciplines
+    tournaments_selected = await select_user_tournaments(call.message.chat.id)
+    tournament_id_to_delete = await select_tournament_by_name(call.data.split('+')[1])
+    tournament_id_to_delete = str(tournament_id_to_delete[0].to_dict()['TournamentID'])
+    tournaments_selected = tournaments_selected[0].split(',') if len(tournaments_selected[0]) > 1 else []
+    if len(tournaments_selected) >= 2:
+        tournaments_selected.remove(tournament_id_to_delete)
+        await update_user_tournaments(call.message.chat.id,
+                                      ",".join(tournaments_selected))
+    else:
+        await update_user_tournaments(call.message.chat.id, '')
+    tiers = ["\\bS\\b", "\\bA\\b", "\\bB\\b"]
+    disciplines_list = ["Apex Legends", "Counter Strike", "Dota 2"]
+    discipline_res = {"Apex Legends": "Apex", "Counter Strike": "CS2", "Dota 2": "DOTA2"}
+    for tier in tiers:
+        find_tier = re.findall(tier, call.message.text)
+        if len(find_tier) != 0:
+            for discipline in disciplines_list:
+                if discipline in call.message.text:
+                    markup = await for_tournaments(disciplines[discipline], find_tier[0]+"-Tier" if find_tier[0] in ["S", "A", "B"] else "Tier " + find_tier[0], call.message.chat.id,
+                                                   discipline_res[discipline])
+                    await bot.edit_message_text(
+                        f"Вы выбрали тир {find_tier[0]} турниров по Apex Legends",
+                        chat_id=call.message.chat.id,
+                        message_id=call.message.message_id, reply_markup=markup.as_markup())
 
 
 # # Main bot functions
@@ -445,13 +602,14 @@ async def scheduler():
 
 
 async def main():
-    global apex, cs, dota2, apex_tournaments, cs_tournaments, dota_tournaments
-    apex = Apex(appname="TNB", game="apexlegends", discipline_id=1)
-    cs = CS(appname="TNB", game="counterstrike", discipline_id=2)
-    dota2 = DOTA2(appname="TNB", game="dota2", discipline_id=3)
+    global apex, cs, dota2, apex_tournaments, cs_tournaments, dota_tournaments, disciplines
+    apex = Apex(appname="TNB", game="apexlegends", discipline_id=1, game_name="Apex Legends")
+    cs = CS(appname="TNB", game="counterstrike", discipline_id=2, game_name="CS2")
+    dota2 = DOTA2(appname="TNB", game="dota2", discipline_id=3, game_name="Dota2")
     apex_tournaments = await apex.get_tournament()
     cs_tournaments = await cs.get_tournament()
     dota_tournaments = await dota2.get_tournament()
+    disciplines = {'Apex Legends': apex_tournaments, 'Counter Strike': cs_tournaments, 'Dota 2': dota_tournaments}
     await dispatcher.start_polling(bot)
 
 asyncio.run(main())

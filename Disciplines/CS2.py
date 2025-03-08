@@ -15,8 +15,8 @@ def tz_diff(date, tz1, tz2):
 
 
 class CS(Base):
-    def __init__(self, appname, game, discipline_id):
-        super().__init__(appname, game, discipline_id)
+    def __init__(self, appname, game, discipline_id, game_name):
+        super().__init__(appname, game, discipline_id, game_name)
 
     async def get_matches(self):
         games = []

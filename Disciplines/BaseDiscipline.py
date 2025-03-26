@@ -103,7 +103,7 @@ class Base:
                 print(tournament['tournament'])
                 if tournament['tournament'] not in tournaments_db_names:
                     await add_tournament({"Prize": str(tournament['prize']), "TeamsCount": tournament["teams_count"],
-                                          "Tier": tournament["tier"], "GameID": 1, "Name": tournament['tournament']})
+                                          "Tier": tournament["tier"], "GameID": self.discipline_id, "Name": tournament['tournament']})
                 tournaments.append(tournament)
         for tournament_db in tournaments_db:
             if tournament_db[0] not in tournaments_names and tournament_db[1] == self.discipline_id:

@@ -114,3 +114,10 @@ class GamesDAO(BaseDAO):
         result = await session.execute(query)
         record = result.scalars().all()
         return record
+
+    @classmethod
+    async def get_game_by_id(cls, session: AsyncSession, id: int):
+        query = select(cls.model).where(Games.GameID == id)
+        result = await session.execute(query)
+        record = result.scalars().all()
+        return record

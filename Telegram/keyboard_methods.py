@@ -10,16 +10,44 @@ async def choose_discipline():  # Keyboard markup maker for disciplines
     key_apex = InlineKeyboardButton(text="Apex", callback_data="Apex")
     key_cs = InlineKeyboardButton(text="CS", callback_data="CS2")
     key_dota = InlineKeyboardButton(text="Dota 2", callback_data="DOTA2")
-    key_subs = InlineKeyboardButton(text="Выбранные турниры", callback_data="Subs")
+    key_subs = InlineKeyboardButton(text="Назад", callback_data="Back main")
     keyboard = [[key_apex],[key_cs],[key_dota],[key_subs]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     return markup
 
 
-async def subscriptions():  # keyboard markup maker for subs menu
-    keyboard = [[InlineKeyboardButton(text="Назад", callback_data='Back disciplines')]]
-    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
-    return markup
+async def subscriptions(user_tournaments, page: int = 0):  # keyboard markup maker for subs menu
+    keyboard_visual = [1] * 11
+    keyboard_builder = InlineKeyboardBuilder()
+    if len(user_tournaments) > 9 and page == 0:
+        min_page_elem, max_page_elem = page*9, page*9 + 9
+        if max_page_elem > len(user_tournaments):
+            max_page_elem = len(user_tournaments)
+        for tournament in user_tournaments[min_page_elem, max_page_elem]:
+            keyboard_builder.button(text=tournament + '✅', callback_data="t+"+tournament + f"+{page}+s")
+        keyboard_builder.button(text=">", callback_data="t+>+" + str(page+1))
+        keyboard_builder.button(text="Назад", callback_data="Back main")
+        keyboard_builder.adjust(*keyboard_visual)
+    elif len(user_tournaments) > 9:
+        min_page_elem, max_page_elem = page * 9, page * 9 + 9
+        if max_page_elem > len(user_tournaments):
+            max_page_elem = len(user_tournaments)
+        for tournament in user_tournaments[min_page_elem, max_page_elem]:
+            keyboard_builder.button(text=tournament + '✅', callback_data="t+" + tournament + f"+{page}+s")
+        keyboard_builder.button(text="<", callback_data="t+<+" + str(page-1))
+        keyboard_builder.button(text=">", callback_data="t+>+" + str(page+1))
+        keyboard_builder.button(text="Назад", callback_data="Back main")
+        keyboard_visual[-2] = 2
+        keyboard_builder.adjust(*keyboard_visual)
+    elif len(user_tournaments) > 1:
+        for tournament in user_tournaments[page:len(user_tournaments)]:
+            keyboard_builder.button(text=tournament + '✅', callback_data="t+" + tournament + f"+{page}+s")
+        keyboard_builder.button(text="Назад", callback_data="Back main")
+        keyboard_builder.adjust(*keyboard_visual[:len(user_tournaments)])
+    else:
+        keyboard_builder.button(text="У вас нет подписок", callback_data="Back main")
+        keyboard_builder.button(text="Назад", callback_data="Back main")
+    return keyboard_builder
 
 async def start_sub_check():
     keys = [[InlineKeyboardButton(text='ТГ канал', url="https://t.me/+n-81CI4xTelhZjgy")],
@@ -29,7 +57,7 @@ async def start_sub_check():
 
 
 
-async def start_menu():  # Main menu from which you can select (no return to this menu 13.09)
+async def start_menu():  # Main menu from which you can select to see disciplines or main menu
     key_subs = InlineKeyboardButton(text="Выбранные турниры", callback_data="Subs")
     key_disciplines = InlineKeyboardButton(text="Выбрать дисциплину", callback_data="Choose discipline")
     keyboard = [[key_disciplines], [key_subs]]
@@ -90,7 +118,7 @@ async def for_tournaments(tournaments, tier, user_id, discipline):  # Keyboard m
 
 
 async def delete_notification(tournament):  # Menu for deleting or not tournament from subs
-    keyboard = [[InlineKeyboardButton(text="Да", callback_data="Delete" + "+" + tournament)],
-                [InlineKeyboardButton(text="Нет", callback_data="Mistake")]]
+    keyboard = [[InlineKeyboardButton(text="Да", callback_data="Delete+" + tournament)],
+                [InlineKeyboardButton(text="Нет", callback_data="Mistake+" + tournament)]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     return markup

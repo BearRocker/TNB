@@ -38,3 +38,7 @@ async def select_user_tournaments(id: int, session: AsyncSession):
 @connection_db
 async def select_users(session: AsyncSession):
     return await UserDAO.get_users(session)
+
+@connection_db
+async def select_game_by_id(id: int, session: AsyncSession):
+    return await GamesDAO.get_game_by_id(session, id)

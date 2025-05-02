@@ -13,7 +13,7 @@ from datetime import datetime
 import aioschedule
 from dateutil import parser
 from datetime import timedelta
-from Telegram.keyboard import *
+from Telegram.keyboard_methods import *
 import Config
 
 bot = AsyncTeleBot(Config.bot_token)

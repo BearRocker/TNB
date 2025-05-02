@@ -18,6 +18,8 @@ class Tournaments(Base):
     Tier: Mapped[str]
     GameID: Mapped[int] = mapped_column(ForeignKey('Games.GameID'))
     Name: Mapped[str]
+    Date: Mapped[str]
+    Location: Mapped[str]
 
 class Games(Base):
     __tablename__ = "Games"

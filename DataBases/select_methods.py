@@ -1,3 +1,5 @@
+from sqlalchemy.util import await_only
+
 from DataBases.dao import MatchesDAO, TournamentsDAO, GamesDAO, UserDAO
 from DataBases.DataBase import connection_db
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,3 +40,11 @@ async def select_user_tournaments(id: int, session: AsyncSession):
 @connection_db
 async def select_users(session: AsyncSession):
     return await UserDAO.get_users(session)
+
+@connection_db
+async def select_game_by_id(id: int, session: AsyncSession):
+    return await GamesDAO.get_game_by_id(session, id)
+
+@connection_db
+async def select_tournament_by_name_and_discipline(name: str, discipline: int, session:AsyncSession):
+    return await TournamentsDAO.get_tournaments_id_discipline(session, name, discipline)

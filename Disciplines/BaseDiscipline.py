@@ -16,11 +16,12 @@ import asyncio
 
 
 class Base:
-    def __init__(self, appname, game, discipline_id):
+    def __init__(self, appname, game, discipline_id, game_name):
         self.appname = appname
         self.discipline_id = discipline_id
         self.liquipedia = LPRequest(appname, game=game)
         self.timezones = collections.defaultdict(list)
+        self.game_name = game_name
         for name in pytz.all_timezones:
             timezone = dtz.gettz(name)
             try:
@@ -46,24 +47,26 @@ class Base:
                 end_date = start_date.split(" ")[0] + " " + end_date
             end_date = parser.parse(end_date)
             today = datetime.today()
-            return today <= end_date
+            if start_date == "May 10":
+                print(end_date.year, today.year)
+            return today <= end_date and today.year == end_date.year
         except dateutil.parser.ParserError:
             return True
         except ValueError:
-            if type(date_range) is int:
+            try:
                 end_date = date_range
                 if "??" in date_range:
                     return True
                 end_date = parser.parse(end_date)
                 today = datetime.today()
-                return today <= end_date
-            else:
+                return today <= end_date and today.year == end_date.year
+            except dateutil.parser.ParserError:
                 return True
 
     async def get_tournament(self):
-        games = await select_games('Apex Legends')
+        games = await select_games(self.game_name)
         if len(games) == 0:
-            await add_games({"GameID": 1, "Name": "Apex Legends"})
+            await add_games({"GameID": self.discipline_id, "Name": self.game_name})
         tournaments = []
         tournaments_names = []
         soup, __ = self.liquipedia.parse('Portal:Tournaments')
@@ -82,6 +85,7 @@ class Base:
                 tournament_date = row.find("div", class_="gridCell EventDetails Date Header")
                 tournament_prize = row.find("div", class_="gridCell EventDetails Prize Header")
                 tournament_teamscount = row.find('div', class_="gridCell EventDetails PlayerNumber Header")
+                tournament_place = row.find('span', class_="FlagText")
                 tournament["tier"] = tournament_tier.get_text().split()[0]
                 tournament["tournament"] = tournament_name.get_text().replace('\xa0', '')
                 tournaments_names.append(tournament['tournament'])
@@ -99,10 +103,11 @@ class Base:
                     tournament["teams_count"] = teams_on_tournament
                 else:
                     tournament["teams_count"] = "idk"
-                print(tournament['tournament'])
+                tournament["place"] = tournament_place.get_text()
+                print(tournament['tournament'], tournament["place"])
                 if tournament['tournament'] not in tournaments_db_names:
                     await add_tournament({"Prize": str(tournament['prize']), "TeamsCount": tournament["teams_count"],
-                                          "Tier": tournament["tier"], "GameID": 1, "Name": tournament['tournament']})
+                                          "Tier": tournament["tier"], "GameID": self.discipline_id, "Name": tournament['tournament'], "Date": tournament["date"], "Location": tournament["place"]})
                 tournaments.append(tournament)
         for tournament_db in tournaments_db:
             if tournament_db[0] not in tournaments_names and tournament_db[1] == self.discipline_id:

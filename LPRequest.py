@@ -1,7 +1,13 @@
-import liquipediapy.exceptions as ex
 from bs4 import BeautifulSoup
 import requests
 from urllib.parse import quote
+
+
+class RequestsException(Exception):
+
+    def __init__(self, message, code=500):
+        super(RequestsException, self).__init__(message)
+        self.code = code
 
 
 class LPRequest():
@@ -18,7 +24,7 @@ class LPRequest():
             try:
                 page_html = response.json()['parse']['text']['*']
             except KeyError:
-                raise ex.RequestsException(response.json(), response.status_code)
+                raise RequestsException(response.json(), response.status_code)
             soup = BeautifulSoup(page_html, features="lxml")
             redirect = soup.find('ul', class_="redirectText")
             if redirect is None:

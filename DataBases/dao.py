@@ -104,6 +104,13 @@ class TournamentsDAO(BaseDAO):
         result = await session.execute(query)
         return result
 
+    @classmethod
+    async def get_tournaments_id_discipline(cls, session: AsyncSession, name: str, discipline: int):
+        query = select(cls.model).where(Tournaments.Name == name).where(Tournaments.GameID == discipline)
+        result = await session.execute(query)
+        records = result.scalars().all()
+        return records
+
 
 class GamesDAO(BaseDAO):
     model = Games
@@ -111,6 +118,13 @@ class GamesDAO(BaseDAO):
     @classmethod
     async def get_game(cls, session: AsyncSession, name: str):
         query = select(cls.model).where(Games.Name == name)
+        result = await session.execute(query)
+        record = result.scalars().all()
+        return record
+
+    @classmethod
+    async def get_game_by_id(cls, session: AsyncSession, id: int):
+        query = select(cls.model).where(Games.GameID == id)
         result = await session.execute(query)
         record = result.scalars().all()
         return record

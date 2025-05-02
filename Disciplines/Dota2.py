@@ -95,6 +95,7 @@ class DOTA2(Base):
                 tournament_date = row.find("div", class_="gridCell EventDetails Date Header")
                 tournament_prize = row.find("div", class_="gridCell EventDetails Prize Header")
                 tournament_teamscount = row.find('div', class_="gridCell EventDetails PlayerNumber Header")
+                tournament_place = row.find('span', class_="FlagText")
                 tournament["tier"] = tournament_tier.get_text()
                 tournament["tournament"] = tournament_name.get_text().replace('\xa0', '')
                 tournaments_names.append(tournament['tournament'])
@@ -112,10 +113,14 @@ class DOTA2(Base):
                     tournament["teams_count"] = teams_on_tournament
                 else:
                     tournament["teams_count"] = "idk"
+                if tournament_place:
+                    tournament["place"] = tournament_place.get_text()
+                else:
+                    tournament["place"] = row.find('div', class_="gridCell EventDetails Location Header").get_text()
                 print(tournament['tournament'])
                 if tournament['tournament'] not in tournaments_db_names:
                     await add_tournament({"Prize": str(tournament['prize']), "TeamsCount": tournament["teams_count"],
-                                          "Tier": tournament["tier"], "GameID": self.discipline_id, "Name": tournament['tournament']})
+                                          "Tier": tournament["tier"], "GameID": self.discipline_id, "Name": tournament['tournament'], "Date": tournament["date"], "Location": tournament["place"]})
                 tournaments.append(tournament)
         for tournament_db in tournaments_db:
             if tournament_db[0] not in tournaments_names and tournament_db[1] == self.discipline_id:

@@ -104,6 +104,13 @@ class TournamentsDAO(BaseDAO):
         result = await session.execute(query)
         return result
 
+    @classmethod
+    async def get_tournaments_id_discipline(cls, session: AsyncSession, name: str, discipline: int):
+        query = select(cls.model).where(Tournaments.Name == name).where(Tournaments.GameID == discipline)
+        result = await session.execute(query)
+        records = result.scalars().all()
+        return records
+
 
 class GamesDAO(BaseDAO):
     model = Games

@@ -1,5 +1,4 @@
 # TNB
-AIOGRAM REWRITE BRANCH
+TNB - Telegram Notification Bot based on information from Liquipedia.net
 
-
-TBC
+Quiet easy in adding on more disciplines to watch

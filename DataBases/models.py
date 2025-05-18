@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
 from DataBases.DataBase import uniq_id, Base
 
@@ -20,6 +20,8 @@ class Tournaments(Base):
     Name: Mapped[str]
     Date: Mapped[str]
     Location: Mapped[str]
+
+    children = relationship("Matches", cascade="all,delete", backref="Tournaments")
 
 class Games(Base):
     __tablename__ = "Games"

@@ -1,3 +1,5 @@
+from numpy.compat import asunicode
+
 from DataBases.select_methods import select_user_tournaments, select_tournaments_by_id, select_tournament_by_name_and_discipline, select_games
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder

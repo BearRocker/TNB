@@ -116,7 +116,7 @@ aioschedule.every(1).seconds.do(update_db)
 @dispatcher.message(CommandStart())
 async def start_message(message: Message):
     keyboard = await start_sub_check()
-    await bot.send_message(chat_id=message.chat.id,text='Привет, это бот для уведомлений о киберспортивных событиях. Для начала работы подпишись на телеграмм канал.',
+    await bot.send_message(chat_id=message.chat.id,text='Привет, это бот для уведомлений о начале матчей на киберспортивных турнирах. Для начала работы подпишись на телеграмм канал.',
                            reply_markup=keyboard)
 
 
@@ -159,7 +159,7 @@ async def check_subs(call: CallbackQuery):
         markup = await start_menu()
         await bot.edit_message_text("Отлично ты подписан!", message_id=call.message.message_id,
                                     chat_id=call.message.chat.id)
-        await bot.send_message(chat_id=call.message.chat.id, text="Выбирай что-то из этого", reply_markup=markup)
+        await bot.send_message(chat_id=call.message.chat.id, text="Главное меню", reply_markup=markup)
         user_exists = await select_user_by_id(call.message.chat.id)
         if len(user_exists) == 0:
             await add_user({'ChatID': call.message.chat.id, 'TournamentsID': '', "Settings": '1 hour'})

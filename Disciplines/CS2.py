@@ -65,5 +65,4 @@ class CS(Base):
                             game['tournament'] = name.get_text()[6:]
                             games.append(game)
                             await asyncio.sleep(30)
-                print(game)
         return games

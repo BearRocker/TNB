@@ -114,7 +114,6 @@ class DOTA2(Base):
                     tournament["place"] = tournament_place.get_text()
                 else:
                     tournament["place"] = row.find('div', class_="gridCell EventDetails Location Header").get_text()
-                print(tournament['tournament'])
                 if [tournament['tournament'], int(self.discipline_id)] not in tournaments_db:
                     tournaments_db.append([tournament['tournament'], str(self.discipline_id)])
                     await add_tournament({"Prize": str(tournament['prize']), "TeamsCount": tournament["teams_count"],

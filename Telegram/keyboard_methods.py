@@ -100,7 +100,6 @@ async def for_tournaments(tournaments, tier, user_id, discipline):  # Keyboard m
         tournaments_prize = sorted(tournaments_prize, key=lambda x: x[1] if x[1] == 0 else float(''.join(x[1][1:].split(','))) if x[1] != '\xa0' else 0)
         for t in tournaments_prize[:10]:
             discipline_id = await select_games(discipline)
-            print(t, discipline_id, discipline)
             t_id = await select_tournament_by_name_and_discipline(t[0], discipline_id[0].to_dict()["GameID"])
             t_id = str(t_id[0].to_dict()["TournamentID"])
             if t_id in user_tournaments:

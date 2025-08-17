@@ -109,6 +109,7 @@ class Base:
         for tournament_db in tournaments_db:
             if tournament_db[0] not in tournaments_names and tournament_db[1] == self.discipline_id:
                 await delete_tournament(tournament_db[0])
+        return tournaments
 
     async def get_matches(self):
         games = []
@@ -158,3 +159,4 @@ class Base:
                             game['tournament'] = name.get_text()[6:]
                             games.append(game)
                             await asyncio.sleep(30)
+        return games

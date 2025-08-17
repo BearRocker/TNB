@@ -288,11 +288,9 @@ async def valorant_tiers(call: CallbackQuery):
 async def show_subs(call: CallbackQuery):
     page = int(call.data.split("+")[1]) if len(call.data.split("+")) > 1 else 0
     user_tournaments_ids = await select_user_tournaments(call.message.chat.id)
-    print(user_tournaments_ids[0].split(','))
     if user_tournaments_ids[0].split(',')[0] not in ['', ' ', "", " "]:
         user_tournaments_ids = list(map(int, user_tournaments_ids[0].split(','))) if len(user_tournaments_ids[0].split(",")) > 1 else [int(user_tournaments_ids[0])]
     else:
-        print(len(user_tournaments_ids[0].split(",")))
         user_tournaments_ids = list(map(int, user_tournaments_ids[0].split(',')))[1:] if len(
             user_tournaments_ids[0].split(",")) > 1 else []
     user_tournaments = []
@@ -342,7 +340,6 @@ async def sub(call: CallbackQuery):
     tournament_tier = tournament[0].to_dict()["Tier"]
     tournaments_selected = await select_user_tournaments(call.message.chat.id)
     discipline_id = tournament[0].to_dict()["GameID"]
-    print(len(tournaments_selected[0].split(',')) > 1, tournaments_selected[0].split(',')[0] not in ['', ' ', "", " "])
     if len(tournaments_selected[0].split(',')) >= 1 and tournaments_selected[0].split(',')[0] not in ['', ' ', "", " "]:
         if tournament_id not in tournaments_selected[0].split(','):
             await update_user_tournaments(call.message.chat.id, tournaments_selected[0] + "," + tournament_id)
@@ -424,7 +421,6 @@ async def delete_from_subs(call: CallbackQuery):
     else:
         await update_user_tournaments(call.message.chat.id, '')
     discipline_dict = {"Apex Legends": "Apex Legends", "CS2": "CS2", "Dota2": "DOTA2", "R6S":"R6S","Valorant": "Valorant"}
-    print(call.data.split("+"))
     tournament = await select_tournament_by_name_and_discipline(call.data.split('+')[1], int(call.data.split("+")[-1]))
     tournament_discipline = await select_game_by_id(int(tournament[0].to_dict()["GameID"]))
     tournament_discipline = str(tournament_discipline[0].Name)

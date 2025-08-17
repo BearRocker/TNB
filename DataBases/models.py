@@ -34,5 +34,4 @@ class Matches(Base):
 
     MatchID: Mapped[uniq_id]
     TournamentsID: Mapped[int] = mapped_column(ForeignKey('Tournaments.TournamentID'))
-    GamesID: Mapped[int] = mapped_column(ForeignKey("Games.GameID"))
     Time: Mapped[str]

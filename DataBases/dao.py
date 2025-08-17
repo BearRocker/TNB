@@ -1,3 +1,4 @@
+from Tools.scripts.cleanfuture import recurse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, insert, update
 from DataBases.DAO.base import BaseDAO
@@ -49,7 +50,7 @@ class MatchesDAO(BaseDAO):
 
     @classmethod
     async def get_matches(cls, session: AsyncSession):
-        query = select(cls.model.TournamentsID, cls.model.Time)
+        query = select(cls.model, cls.model.Time)
         result = await session.execute(query)
         records = result.scalars().all()
         return records
@@ -78,15 +79,15 @@ class TournamentsDAO(BaseDAO):
     model = Tournaments
 
     @classmethod
-    async def get_tournaments_id(cls, session: AsyncSession, name: str):
+    async def get_tournament_by_name(cls, session: AsyncSession, name: str):
         query = select(cls.model).where(Tournaments.Name == name)
         result = await session.execute(query)
         records = result.scalars().all()
         return records
 
     @classmethod
-    async def get_tournaments_name(cls, session: AsyncSession, id: int):
-        query = select(cls.model.Name).where(Tournaments.TournamentID == id)
+    async def get_tournament_by_id(cls, session: AsyncSession, id: int):
+        query = select(cls.model).where(Tournaments.TournamentID == id)
         result = await session.execute(query)
         record = result.scalars().all()
         return record
@@ -107,6 +108,13 @@ class TournamentsDAO(BaseDAO):
     @classmethod
     async def get_tournaments_id_discipline(cls, session: AsyncSession, name: str, discipline: int):
         query = select(cls.model).where(Tournaments.Name == name).where(Tournaments.GameID == discipline)
+        result = await session.execute(query)
+        records = result.scalars().all()
+        return records
+
+    @classmethod
+    async def get_all_tournaments(cls, session: AsyncSession):
+        query = select(cls.model)
         result = await session.execute(query)
         records = result.scalars().all()
         return records

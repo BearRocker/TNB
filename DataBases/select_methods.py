@@ -15,7 +15,7 @@ async def select_matches_by_id(id: int, session: AsyncSession):
 
 @connection_db
 async def select_tournament_by_name(name: str, session: AsyncSession):
-    return await TournamentsDAO.get_tournaments_id(session, name)
+    return await TournamentsDAO.get_tournament_by_name(session, name)
 
 @connection_db
 async def select_tournaments(session: AsyncSession):
@@ -23,7 +23,7 @@ async def select_tournaments(session: AsyncSession):
 
 @connection_db
 async def select_tournaments_by_id(id: int, session: AsyncSession):
-    return await TournamentsDAO.get_tournaments_name(session, id)
+    return await TournamentsDAO.get_tournament_by_id(session, id)
 
 @connection_db
 async def select_games(name:str, session: AsyncSession):
@@ -48,3 +48,7 @@ async def select_game_by_id(id: int, session: AsyncSession):
 @connection_db
 async def select_tournament_by_name_and_discipline(name: str, discipline: int, session:AsyncSession):
     return await TournamentsDAO.get_tournaments_id_discipline(session, name, discipline)
+
+@connection_db
+async def select_all_tournaments(session: AsyncSession):
+    return await TournamentsDAO.get_all_tournaments(session)

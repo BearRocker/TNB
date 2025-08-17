@@ -1,5 +1,3 @@
-from numpy.compat import asunicode
-
 from DataBases.select_methods import select_user_tournaments, select_tournaments_by_id, select_tournament_by_name_and_discipline, select_games
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -26,12 +24,11 @@ async def subscriptions(user_tournaments, page: int = 0):  # keyboard markup mak
     if len(user_tournaments) > 9 and page == 0:
         min_page_elem = page*9
         max_page_elem = page*9 + 9
-        print(min_page_elem, max_page_elem, user_tournaments)
         if max_page_elem > len(user_tournaments):
             max_page_elem = len(user_tournaments)
         temp_user_tournaments = user_tournaments[min_page_elem:max_page_elem]
         for tournament in temp_user_tournaments:
-            keyboard_builder.button(text=tournament + '✅', callback_data="t+"+tournament + f"+{page}+s")
+            keyboard_builder.button(text=tournament[0] + '✅', callback_data="t+"+tournament[0] + f"+{page}+s+{tournament[1]}")
         keyboard_builder.button(text=">", callback_data=">+" + str(page+1))
         keyboard_builder.button(text="Назад", callback_data="Back main")
         keyboard_builder.adjust(*keyboard_visual)
@@ -42,17 +39,17 @@ async def subscriptions(user_tournaments, page: int = 0):  # keyboard markup mak
             max_page_elem = len(user_tournaments)
         temp_user_tournaments = user_tournaments[min_page_elem:max_page_elem]
         for tournament in temp_user_tournaments:
-            keyboard_builder.button(text=tournament + '✅', callback_data="t+" + tournament + f"+{page}+s")
+            keyboard_builder.button(text=tournament[0] + '✅', callback_data="t+" + tournament[0] + f"+{page}+s+{tournament[1]}")
         keyboard_builder.button(text="<", callback_data="<+" + str(page-1))
         if max_page_elem != len(user_tournaments):
             keyboard_builder.button(text=">", callback_data=">+" + str(page+1))
         keyboard_builder.button(text="Назад", callback_data="Back main")
         keyboard_visual[-2] = 2
         keyboard_builder.adjust(*keyboard_visual)
-    elif len(user_tournaments) > 1:
+    elif len(user_tournaments) >= 1:
         temp_user_tournaments = user_tournaments[page:len(user_tournaments)]
         for tournament in temp_user_tournaments:
-            keyboard_builder.button(text=tournament + '✅', callback_data="t+" + tournament + f"+{page}+s")
+            keyboard_builder.button(text=tournament[0] + '✅', callback_data="t+" + tournament[0] + f"+{page}+s+{tournament[1]}")
         keyboard_builder.button(text="Назад", callback_data="Back main")
         keyboard_builder.adjust(*keyboard_visual[:len(user_tournaments)])
     else:
@@ -103,13 +100,13 @@ async def for_tournaments(tournaments, tier, user_id, discipline):  # Keyboard m
         tournaments_prize = sorted(tournaments_prize, key=lambda x: x[1] if x[1] == 0 else float(''.join(x[1][1:].split(','))) if x[1] != '\xa0' else 0)
         for t in tournaments_prize[:10]:
             discipline_id = await select_games(discipline)
-            print(discipline_id[0].to_dict()["GameID"])
+            print(t, discipline_id, discipline)
             t_id = await select_tournament_by_name_and_discipline(t[0], discipline_id[0].to_dict()["GameID"])
-            t_id = str(t_id[0].TournamentID)
+            t_id = str(t_id[0].to_dict()["TournamentID"])
             if t_id in user_tournaments:
-                markup.button(text=t[0] + '✅', callback_data="t" + "+" + t[0])
+                markup.button(text=t[0] + '✅', callback_data="t" + "+" + t[0] + "+" + str(discipline_id[0].to_dict()["GameID"]))
             else:
-                markup.button(text=t[0] + '❌', callback_data="t" + "+" + t[0])
+                markup.button(text=t[0] + '❌', callback_data="t" + "+" + t[0] + "+" + str(discipline_id[0].to_dict()["GameID"]))
         if len(markup.export()) == 0:
             markup.button(text="Сейчас турниров такого тира не ожидается", callback_data=f"Back tier|{discipline}")
         markup.button(text="Назад к выбору тира", callback_data=f"Back tier|{discipline}")
@@ -122,10 +119,8 @@ async def for_tournaments(tournaments, tier, user_id, discipline):  # Keyboard m
                     tournaments_prize.append((i['tournament'], i['prize']))
             tournaments_prize = sorted(tournaments_prize, key=lambda x: x[1] if x[1] == 0 else float(''.join(x[1][1:].split(','))) if x[1] != '\xa0' else 0)
             for t in tournaments_prize[:10]:
-                if t[0] in user_tournaments:
-                    markup.button(text=t[0] + '✅', callback_data="t" + "+" + t[0])
-                else:
-                    markup.button(text=t[0] + '❌', callback_data="t" + "+" + t[0])
+                discipline_id = await select_games(discipline)
+                markup.button(text=t[0] + '❌', callback_data="t" + "+" + t[0] + "+" + str(discipline_id[0].to_dict()["GameID"]))
             if len(markup.export()) == 0:
                 markup.button(text="Сейчас турниров такого тира не ожидается", callback_data=f"Back tier|{discipline}")
             markup.button(text="Назад к выбору тира", callback_data=f"Back tier|{discipline}")
@@ -135,8 +130,12 @@ async def for_tournaments(tournaments, tier, user_id, discipline):  # Keyboard m
             logger.exception(msg=e)
 
 
-async def delete_notification(tournament):  # Menu for deleting or not tournament from subs
-    keyboard = [[InlineKeyboardButton(text="Да", callback_data="Delete+" + tournament)],
-                [InlineKeyboardButton(text="Нет", callback_data="Mistake+" + tournament)]]
+async def delete_notification(tournament, disc_id=0):  # Menu for deleting or not tournament from subs
+    if disc_id == 0:
+        keyboard = [[InlineKeyboardButton(text="Да", callback_data="Delete+" + tournament)],
+                    [InlineKeyboardButton(text="Нет", callback_data="Mistake+" + tournament)]]
+    else:
+        keyboard = [[InlineKeyboardButton(text="Да", callback_data="Delete+" + tournament + "+" + str(disc_id))],
+                    [InlineKeyboardButton(text="Нет", callback_data="Mistake+" + tournament + "+" + str(disc_id))]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     return markup

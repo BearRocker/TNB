@@ -18,7 +18,7 @@ def tz_diff(date, tz1, tz2):
 
 
 class DOTA2(Base):
-    def __init__(self, appname, game, discipline_id, game_name):
+    def __init__(self, appname: str, game: str, discipline_id: int, game_name: str):
         super().__init__(appname, game, discipline_id, game_name)
 
     async def get_matches(self):
@@ -83,9 +83,6 @@ class DOTA2(Base):
         tables = soup.find_all('div', class_="gridTable")
         tournaments_db = await select_tournaments()
         tournaments_db = [[i.Name, i.GameID] for i in tournaments_db]
-        tournaments_db_names = []
-        for i in tournaments_db:
-            tournaments_db_names.append(i[0])
         for table in tables:
             rows = table.find_all('div', class_="gridRow")
             for row in rows:
@@ -117,8 +114,8 @@ class DOTA2(Base):
                     tournament["place"] = tournament_place.get_text()
                 else:
                     tournament["place"] = row.find('div', class_="gridCell EventDetails Location Header").get_text()
-                print(tournament['tournament'])
-                if tournament['tournament'] not in tournaments_db_names:
+                if [tournament['tournament'], int(self.discipline_id)] not in tournaments_db:
+                    tournaments_db.append([tournament['tournament'], str(self.discipline_id)])
                     await add_tournament({"Prize": str(tournament['prize']), "TeamsCount": tournament["teams_count"],
                                           "Tier": tournament["tier"], "GameID": self.discipline_id, "Name": tournament['tournament'], "Date": tournament["date"], "Location": tournament["place"]})
                 tournaments.append(tournament)
